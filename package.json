@@ -4,11 +4,18 @@
   "description": "Record and replay http request",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "make build"
   },
   "author": "shirAvr",
   "license": "ISC",
   "dependencies": {
-    "lodash": "^4.16.2"
+    "async": "^2.1.4",
+    "hoek": "^4.1.0",
+    "lodash": "^4.17.4",
+    "mongodb": "^2.2.22",
+    "request": "^2.79.0",
+    "streamifier": "^0.1.1",
+    "url": "^0.11.0"
   }
 }

@@ -1,34 +1,33 @@
-Hoek = reqire "hoek"
+_ = require "lodash"
+Async = require "async"
+Hoek = require "hoek"
 
 class DurationManager # DurationHandler
-  subCollectionName: "Durations"
-
   constructor: (@server, @db, @recordsName) ->
     Hoek.assert @server?, "server must be defined"
     Hoek.assert @db?, "db must be defined"
-    hoek.assert @recordsName?, "recordsName must be defined"
+    Hoek.assert @recordsName?, "recordsName must be defined"
 
     @totalDuration = 0
 
-    @collectionName = "#{@recordsName}#{subCollectionName}"
-
   initialize: (callback) ->
-    @initCollection (err, durationsCollection) =>
-      return callback(err) if err?
-
-      @durationsCollection = durationsCollection
-
-      callback()
+    Async.series [
+      (next) => @setCollectionName(next)
+      (next) => @initCollection(next)
+    ], callback
 
   listen: ->
     @server.on "response", (request) =>
-      duration = @calculate request._logger
+      duration = @calculate request.info
 
       requestDuration =
         path: request.path
         method: request.method
         params: request.orig.params or request.params
         duration: duration
+
+      if request.response._error?
+        requestDuration.params.error = request.response._error 
 
       @totalDuration += duration
 
@@ -47,15 +46,33 @@ class DurationManager # DurationHandler
     console.log "Total duration: #{@totalDuration} [sec]"
     console.log()
 
-  calculate: (logger) ->
-    startTime = new Date(logger[0].timestamp)
-    doneTime = new Date()
+  calculate: (info) ->
+    startTime = new Date(info.received)
+    doneTime = new Date(info.responded)
     doneTime - startTime
 
-  initCollection: (callback) ->
-    @db.collection @collectionName, (err, durationsCollection) ->
+  setCollectionName: (callback) ->
+    @db.listCollections().toArray (err, existCollections) =>
       return callback(err) if err?
 
-      durationsCollection.remove {}, callback
+      existCollectionsNames = _.map existCollections, "name"
+
+      if "afterDurations" in existCollectionsNames
+        err = new Error("afterDurations collection already exists")
+        return callback(err)
+
+      if "beforeDurations" in existCollectionsNames 
+        @collectionName = "afterDurations" 
+      else 
+        @collectionName = "beforeDurations"
+
+      callback()
+
+  initCollection: (callback) ->
+    @db.collection @collectionName, (err, durationsCollection) =>
+      return callback(err) if err?
+
+      @durationsCollection = durationsCollection
+      callback()
 
 module.exports = DurationManager

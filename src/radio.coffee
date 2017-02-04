@@ -6,7 +6,7 @@ Request = require "request"
 Streamifier = require "streamifier"
 Url = require "url"
 
-DurationManger = require "./durationManager"
+DurationManager = require "./durationManager"
 Record = require "./record"
 
 class Radio
@@ -21,14 +21,14 @@ class Radio
   initialize: (callback) ->
     @openDb (err, @db, @collection) =>
       return callback(err) if err?
-      @durationManager = new DurationManger @server, @db, @options.recordsName
+      @durationManager = new DurationManager @server, @db, @options.recordsName
 
       @durationManager.initialize (err) =>
         return callback(err) if err?
 
         switch @options.action
-          when "record" then record()
-          when "replay" then replay()
+          when "record" then @record()
+          when "replay" then @replay()
 
         callback()
 
@@ -36,19 +36,21 @@ class Radio
     records = {}
     startRecord = new Date()
 
-    @server.on "request", (request, events, tags) =>
+    @server.on "request-internal", (request, events, tags) =>
+      return if request.method == "options"
+
       id = request.id
       record = records[id]
 
       if tags.received?
 
-        timestamp = new Date(request._logger[0].timestamp)
+        timestamp = new Date(events.timestamp)
         delay = timestamp - startRecord
 
-        recordsInfo =
+        recordInfo =
           path: request.path
           method: request.method
-          headres: request.headres
+          headers: request.headers
           delay: delay
           query: JSON.stringify(request.query).toString()
 
@@ -68,11 +70,11 @@ class Radio
           Hoek.assert !err, err
 
   replay: ->
-    @recordsCollection.find().toArray (err records) =>
+    @recordsCollection.find().toArray (err, records) =>
       @durationManager.listen()
 
       Async.each records, (record, next) =>
-        @requestByDelay record, record.delay, next
+        @replayByDelay record, record.delay, next
 
       , (err) =>
         Hoek.assert !err, err
@@ -84,12 +86,12 @@ class Radio
   request: (record, callback) ->
     routeUrl = Url.resolve @server.info.uri, record.path
 
-    headres =
-      authorization: record.headres.authorization # TODO: add 'if-modified-since' value
+    headers =
+      authorization: record.headers?.authorization # TODO: add 'if-modified-since' value
 
     request = 
       method: record.method
-      headres: headres
+      headers: headers
       params: record.params
       body: JSON.stringify(record.payload)
       url: routeUrl
@@ -107,7 +109,7 @@ class Radio
     stream.pipe(req).on "end", callback if stream?
 
   isStreamRequest: (request) ->
-    request.headres["transfer-encoding"] is "chunked"
+    request.headers?["transfer-encoding"] is "chunked"
 
   getChunkedData: (stream, record) ->
     # It requires a uniqe treatment for a stream object, in order to get all the chunked data.
@@ -132,19 +134,20 @@ class Radio
     Streamifier.createReadStream buffer
 
   openDb: (callback) ->
-      Async.waterfall [
-        (next) =>
-          Mongo.MongoClient.connect @options.dbUrl, next
+    Async.waterfall [
+      (next) =>
+        Mongo.MongoClient.connect @options.dbUrl, next
 
-        (db, next) =>
-          db.collection @options.recordsName, _.partial(next, _, db)
+      (db, next) =>
+        db.collection @options.recordsName, _.partial(next, _, db)
 
-        (db, collection, next) =>
-          return next(null, db, collection) if @options.action isnt "record"
-          collection.remove {}, _.partial(next, _, db, collection)
+      (db, collection, next) =>
+        @recordsCollection = collection
+        return next(null, db, collection) if @options.action isnt "record"
+        collection.remove {}, _.partial(next, _, db, collection)
 
-      ], (err, db, collection) ->
-        return callback(err) if err?
-        callback null, db, collection
+    ], (err, db, collection) ->
+      return callback(err) if err?
+      callback null, db, collection
 
 module.exports = Radio

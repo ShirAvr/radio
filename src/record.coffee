@@ -4,6 +4,6 @@ class Record
     { @path, @method, @headers, @delay, @query } = info
 
   save: (collection, callback) ->
-    collection.insert this, callback
+  	collection.insert this, callback
 
 module.exports = Record
