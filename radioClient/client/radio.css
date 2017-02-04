@@ -1,0 +1,32 @@
+#actionRegion {
+	width: 60%;
+	margin: auto;
+}
+
+#actionRegion #filter {
+	width: 50%;
+	display: inline;
+	margin-left: 20px;
+}
+
+#actionRegion #currentChart {
+	height: 45px;
+	width: 15%;`
+}
+
+#chartContainer {
+	width: 95%;
+	margin: auto;
+	margin-top: 20px;
+}
+
+#filter {
+	background-image: url('searchicon.png'); 
+	background-position: 10px 12px; 
+	background-repeat: no-repeat;
+	width: 100%; 
+	font-size: 16px; 
+	padding: 12px 20px 12px 40px; 
+	border: 1px solid #ddd; 
+	margin-bottom: 12px; 
+}

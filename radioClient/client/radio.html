@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+
+<html>
+
+  <head>  
+    <script type="text/javascript" src="assets/jquery-3.1.1.js"></script>
+    <script type="text/javascript" src="assets/canvasjs.min.js"></script>
+    <script type="text/javascript" src="radio.js"></script>
+    <link rel="stylesheet" type="text/css" href="radio.css">
+  </head>
+
+  <body>
+    <div id="actionRegion">
+      <select id="currentChart" onchange="changeCurrentChart()">
+        <option value="average">Average Chart</option> 
+        <option value="range">Range Chart</option> 
+        <option value="errors">Errors Chart</option> 
+      <input type="text" id="filter" onkeyup="filterRoutes()" placeholder="Filter by route name...">
+    </div>
+    <div id="chartContainer"></div>
+  </body>
+
+</html>

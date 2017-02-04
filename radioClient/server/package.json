@@ -1,0 +1,25 @@
+{
+  "name": "random-server",
+  "version": "1.0.0",
+  "description": "Random Server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shakhara/randomServer.git"
+  },
+  "keywords": [
+    "hapi",
+    "learn",
+    "community"
+  ],
+  "dependencies": {
+    "async": "^2.1.4",
+    "hapi": "^16.1.0",
+    "hoek": "^4.1.0",
+    "lodash": "^4.17.4",
+    "mongodb": "^2.2.22"
+  },
+  "scripts": {
+    "start": "make build && node lib/start.js",
+    "install": "make build"
+  }
+}
